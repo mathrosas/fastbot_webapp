@@ -6,7 +6,7 @@ var app = new Vue({
         ros: null,
         logs: [],
         loading: false,
-        rosbridge_address: '',
+        rosbridge_address: 'wss://i-072c76f0268139e29.robotigniteacademy.com/73751b66-46ae-4fdd-8a93-e0e23b51ec2c/rosbridge/',
         port: '9090',
         // 3D stuff
         viewer: null,
@@ -48,7 +48,7 @@ var app = new Vue({
                 width: 400,
                 height: 300,
                 antialias: true,
-                fixedFrame: 'fastbot_odom'
+                fixedFrame: 'fastbot_1_odom'
             })
 
             // Add a grid.
@@ -64,13 +64,13 @@ var app = new Vue({
                 angularThres: 0.01,
                 transThres: 0.01,
                 rate: 10.0,
-                fixedFrame: 'fastbot_base_link'
+                fixedFrame: 'fastbot_1_base_link'
             })
 
             // Setup the URDF client.
             this.urdfClient = new ROS3D.UrdfClient({
                 ros: this.ros,
-                param: '/fastbot_robot_state_publisher:robot_description',
+                param: '/fastbot_1_robot_state_publisher:robot_description',
                 tfClient: this.tfClient,
                 // We use "path: location.origin + location.pathname"
                 // instead of "path: window.location.href" to remove query params,
