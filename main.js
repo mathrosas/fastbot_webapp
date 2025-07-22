@@ -12,6 +12,8 @@ var app = new Vue({
         viewer: null,
         tfClient: null,
         urdfClient: null,
+        mapViewer: null,
+        mapClient: null
     },
     // helper methods to connect to ROS
     methods: {
@@ -26,6 +28,7 @@ var app = new Vue({
                 this.connected = true
                 this.loading = false
                 this.setup3DViewer()
+                this.setupMapViewer()
             })
             this.ros.on('error', (error) => {
                 this.logs.unshift((new Date()).toTimeString() + ` - Error: ${error}`)
@@ -83,5 +86,32 @@ var app = new Vue({
         unset3DViewer() {
             document.getElementById('div3DViewer').innerHTML = ''
         },
+        setupMapViewer() {
+            // 1) create the 2D viewer
+            this.mapViewer = new ROS2D.Viewer({
+                divID:  'divMapViewer',
+                width:  document.getElementById('divMapViewer').clientWidth,
+                height: document.getElementById('divMapViewer').clientHeight,
+            })
+
+            // 2) subscribe to the /map topic and draw it, continuously
+            this.mapClient = new ROS2D.OccupancyGridClient({
+                ros:        this.ros,
+                rootObject: this.mapViewer.scene,
+                topic:      '/map',
+                continuous: true,
+            })
+
+            // 3) once the grid arrives or updates, scale AND SHIFT to center
+            this.mapClient.on('change', () => {
+                const grid = this.mapClient.currentGrid;
+                this.mapViewer.scaleToDimensions(grid.width, grid.height);
+                // recenter the map so (0,0) is in the middle of the canvas
+                this.mapViewer.shift(
+                grid.pose.position.x,
+                grid.pose.position.y
+                )
+            })
+        }
     },
 })
