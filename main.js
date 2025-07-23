@@ -34,7 +34,17 @@ var vueApp = new Vue({
         // publisher
         pubInterval: null,
         odomTopic: null,
-        position: { x:0, y:0, z:0 }
+        position: { x:0, y:0, z:0 },
+        orientation: { x:0, y:0, z:0, w:1 },
+        cmdVelTopic: null,
+        speed: { linear:0, angular:0 }
+    },
+    computed: {
+        yaw() {
+            const { x, y, z, w } = this.orientation;
+            // yaw = atan2( 2*(w*z + x*y), 1 - 2*(y*y + z*z) )
+            return Math.atan2(2*(w*z + x*y), 1 - 2*(y*y + z*z));
+        }
     },
     // helper methods to connect to ROS
     methods: {
@@ -52,7 +62,7 @@ var vueApp = new Vue({
                 this.setupMapViewer()
                 this.pubInterval = setInterval(this.publish, 100)
 
-                // Subscribe to odometry
+                // subscribe to odometry
                 this.odomTopic = new ROSLIB.Topic({
                     ros: this.ros,
                     name: '/fastbot_1/odom',
@@ -61,6 +71,19 @@ var vueApp = new Vue({
                 
                 this.odomTopic.subscribe((message) => {
                     this.position = message.pose.pose.position
+                    this.orientation = message.pose.pose.orientation
+                })
+
+                // subscribe to cmd_vel
+                this.cmdVelTopic = new ROSLIB.Topic({
+                    ros: this.ros,
+                    name: '/fastbot_1/cmd_vel',
+                    messageType: 'geometry_msgs/Twist'
+                })
+                
+                this.cmdVelTopic.subscribe((message) => {
+                    this.speed.linear = message.linear.x
+                    this.speed.angular = message.angular.z
                 })
             })
             this.ros.on('error', (error) => {
@@ -73,6 +96,7 @@ var vueApp = new Vue({
                 this.unset3DViewer()
                 clearInterval(this.pubInterval)
                 if (this.odomTopic) this.odomTopic.unsubscribe()
+                if (this.cmdVelTopic) this.cmdVelTopic.unsubscribe()
             })
         },
         setup3DViewer() {
@@ -211,7 +235,7 @@ var vueApp = new Vue({
         },
         setJoystickVals() {
             this.joystick.vertical = -1 * ((this.y / 200) - 0.5)
-            this.joystick.horizontal = +1 * ((this.x / 200) - 0.5)
+            this.joystick.horizontal = -1 * ((this.x / 200) - 0.5)
         },
         resetJoystickVals() {
             this.joystick.vertical = 0
