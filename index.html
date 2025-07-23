@@ -83,10 +83,10 @@
 </head>
 
 <body>
-    <div id="app" class="container py-4">
+    <div id="vueApp" class="container py-4">
 
         <div class="text-center mb-4">
-            <h3>FastBot Web Control Dashboard</h3>
+            <h3>{{ menu_title }}</h3>
         </div>
 
         <div class="row mb-3">
@@ -132,25 +132,45 @@
             <!-- Joystick -->
             <div class="col-md-4">
                 <div class="card">
-                    <div class="card-header">Joystick Control</div>
+                    <div class="card-header">Joystick</div>
                     <div class="card-body text-center">
                         <div id="dragstartzone" @mousedown="startDrag" @mousemove="doDrag"
                             @touchstart.prevent="startDrag" @touchmove.prevent="doDrag">
                         </div>
                         <div id="dragCircle" :style="dragCircleStyle"></div>
+
+                        <!-- ← here are the values right under the joystick -->
+                        <div class="mt-3">
+                            <h5>Values</h5>
+                            <p class="mb-1">Vertical: {{ joystick.vertical.toFixed(3) }}</p>
+                            <p>Horizontal: {{ joystick.horizontal.toFixed(3) }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script type="text/javascript">
-        // cache‑busting loader for main.js
-        var script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = 'main.js?v=' + Date.now();
-        document.head.appendChild(script);
-    </script>
+        <!-- Pose -->
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">Pose</div>
+                    <div class="card-body">
+                        <p>X: {{ position.x.toFixed(2) }}</p>
+                        <p>Y: {{ position.y.toFixed(2) }}</p>
+                        <p>Z: {{ position.z.toFixed(2) }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            // cache‑busting loader for main.js
+            var script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = 'main.js?v=' + Date.now();
+            document.head.appendChild(script);
+        </script>
 </body>
 
 </html>

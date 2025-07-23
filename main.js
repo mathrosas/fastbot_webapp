@@ -1,13 +1,14 @@
-var app = new Vue({
-    el: '#app',
+var vueApp = new Vue({
+    el: '#vueApp',
     // storing the state of the page
     data: {
         connected: false,
         ros: null,
         logs: [],
         loading: false,
-        rosbridge_address: 'wss://i-026c8b8515ae4600c.robotigniteacademy.com/4a41c6d8-1ec2-4ef9-b356-d7050b0324fc/rosbridge/',
+        rosbridge_address: 'wss://i-064b7f80e1e032cd9.robotigniteacademy.com/31bec39d-39db-47c2-9ffb-4140d22c3cfa/rosbridge/',
         port: '9090',
+        menu_title: 'FastBot Web Control Dashboard',
         // 3D stuff
         viewer: null,
         tfClient: null,
@@ -32,6 +33,8 @@ var app = new Vue({
         },
         // publisher
         pubInterval: null,
+        odomTopic: null,
+        position: { x:0, y:0, z:0 }
     },
     // helper methods to connect to ROS
     methods: {
@@ -48,6 +51,17 @@ var app = new Vue({
                 this.setup3DViewer()
                 this.setupMapViewer()
                 this.pubInterval = setInterval(this.publish, 100)
+
+                // Subscribe to odometry
+                this.odomTopic = new ROSLIB.Topic({
+                    ros: this.ros,
+                    name: '/fastbot_1/odom',
+                    messageType: 'nav_msgs/Odometry'
+                })
+                
+                this.odomTopic.subscribe((message) => {
+                    this.position = message.pose.pose.position
+                })
             })
             this.ros.on('error', (error) => {
                 this.logs.unshift((new Date()).toTimeString() + ` - Error: ${error}`)
@@ -58,16 +72,23 @@ var app = new Vue({
                 this.loading = false
                 this.unset3DViewer()
                 clearInterval(this.pubInterval)
+                if (this.odomTopic) this.odomTopic.unsubscribe()
             })
         },
         setup3DViewer() {
+            // 1) figure out how big the container really is
+            const viewerDiv = document.getElementById('div3DViewer')
+            const w = viewerDiv.clientWidth
+            const h = viewerDiv.clientHeight
+
+            // 2) use those dimensions instead of a magic “400×300”
             this.viewer = new ROS3D.Viewer({
                 background: '#cccccc',
-                divID: 'div3DViewer',
-                width: 400,
-                height: 300,
+                divID:     'div3DViewer',
+                width:     w,
+                height:    h,
                 antialias: true,
-                fixedFrame: 'fastbot_1_odom'
+                fixedFrame:'fastbot_1_odom'
             })
 
             // Add a grid.
@@ -104,10 +125,11 @@ var app = new Vue({
         },
         setupMapViewer() {
             // 1) create the 2D viewer
+            const mapDiv = document.getElementById('divMapViewer')
             this.mapViewer = new ROS2D.Viewer({
                 divID:  'divMapViewer',
-                width:  document.getElementById('divMapViewer').clientWidth,
-                height: document.getElementById('divMapViewer').clientHeight,
+                width:  mapDiv.clientWidth,
+                height: mapDiv.clientHeight
             })
 
             // 2) subscribe to the /map topic and draw it, continuously
@@ -133,8 +155,7 @@ var app = new Vue({
         publish: function() {
             let topic = new ROSLIB.Topic({
                 ros: this.ros,
-                // name: '/fastbot_1/cmd_vel',
-                name: '/cmd_vel',
+                name: '/fastbot_1/cmd_vel',
                 messageType: 'geometry_msgs/Twist'
             })
             let message = new ROSLIB.Message({
@@ -149,8 +170,7 @@ var app = new Vue({
         sendCommand: function() {
             let topic = new ROSLIB.Topic({
                 ros: this.ros,
-                // name: '/fastbot_1/cmd_vel',
-                name: '/cmd_vel',
+                name: '/fastbot_1/cmd_vel',
                 messageType: 'geometry_msgs/Twist'
             })
             let message = new ROSLIB.Message({
@@ -201,6 +221,6 @@ var app = new Vue({
     mounted() {
         // page is ready
         window.addEventListener('mouseup', this.stopDrag)
-        window.addEventListener('touchend', this.stopDrag)
+        // window.addEventListener('touchend', this.stopDrag)
     },
 })
