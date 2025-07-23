@@ -6,9 +6,9 @@ var vueApp = new Vue({
         ros: null,
         logs: [],
         loading: false,
-        rosbridge_address: 'wss://i-064b7f80e1e032cd9.robotigniteacademy.com/31bec39d-39db-47c2-9ffb-4140d22c3cfa/rosbridge/',
+        rosbridge_address: 'wss://i-03b561d5d597a0cbc.robotigniteacademy.com/bd805901-5fa2-476b-85a2-5de8db5ac7c6/rosbridge/',
         port: '9090',
-        menu_title: 'FastBot Web Control Dashboard',
+        menu_title: 'FastBot Control Dashboard',
         // 3D stuff
         viewer: null,
         tfClient: null,
@@ -37,7 +37,9 @@ var vueApp = new Vue({
         position: { x:0, y:0, z:0 },
         orientation: { x:0, y:0, z:0, w:1 },
         cmdVelTopic: null,
-        speed: { linear:0, angular:0 }
+        speed: { linear:0, angular:0 },
+        action_busy: false,
+        action_response: '',
     },
     computed: {
         yaw() {
@@ -85,6 +87,12 @@ var vueApp = new Vue({
                 this.cmdVelTopic.subscribe((message) => {
                     this.speed.linear = message.linear.x
                     this.speed.angular = message.angular.z
+                })
+
+                this.navigateToPoseClient = new ROSLIB.ActionClient({
+                    ros: this.ros,
+                    serverName: '/navigate_to_pose',
+                    actionName: 'nav2_msgs/action/NavigateToPose'
                 })
             })
             this.ros.on('error', (error) => {
@@ -283,6 +291,60 @@ var vueApp = new Vue({
 
             // 5) insert it
             camDiv.appendChild(img)
+        },
+        navigateToWaypoint(x, y, theta) {
+            return new Promise((resolve, reject) => {
+                if (!this.ros || !this.connected) {
+                    reject("Not connected to ROS bridge")
+                    return
+                }
+
+                console.log("Creating topic publisher...")
+                const goalTopic = new ROSLIB.Topic({
+                    ros: this.ros,
+                    name: '/goal_pose',
+                    messageType: 'geometry_msgs/PoseStamped'
+                })
+
+                const qz = Math.sin(theta/2)
+                const qw = Math.cos(theta/2)
+
+                const message = {
+                    header: {
+                        stamp: {sec: 0, nanosec: 0},
+                        frame_id: 'map'
+                    },
+                    pose: {
+                        position: {x, y, z: 0},
+                        orientation: {x: 0, y: 0, z: qz, w: qw}
+                    }
+                }
+
+                console.log("Topic message:", message)
+                
+                // Set timeout for topic navigation
+                const topicTimeout = setTimeout(() => {
+                    reject("Topic navigation timeout (10s)")
+                }, 10000)
+
+                // Add a one-time subscriber to check for navigation completion
+                const resultTopic = new ROSLIB.Topic({
+                    ros: this.ros,
+                    name: '/navigation_result',
+                    messageType: 'std_msgs/msg/Bool'
+                })
+
+                const subscription = resultTopic.subscribe(message => {
+                    if (message.data) {
+                        clearTimeout(topicTimeout)
+                        subscription.unsubscribe()
+                        resolve()
+                    }
+                })
+
+                console.log("Publishing topic goal...")
+                goalTopic.publish(new ROSLIB.Message(message))
+            })
         },
     },
     mounted() {

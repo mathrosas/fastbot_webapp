@@ -68,6 +68,22 @@
         #dragCircle:hover {
             background-color: lightcoral;
         }
+
+        .waypoints .btn {
+            margin: 5px 0;
+            padding: 10px;
+            font-size: 14px;
+        }
+
+        .waypoints .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .waypoints .btn-primary:hover {
+            background-color: #0069d9;
+            border-color: #0062cc;
+        }
     </style>
 
     <!-- ROS libraries -->
@@ -181,6 +197,31 @@
                             <h5>Values</h5>
                             <p class="mb-1">Vertical: {{ joystick.vertical.toFixed(3) }}</p>
                             <p>Horizontal: {{ joystick.horizontal.toFixed(3) }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Waypoints -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">Waypoints</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <button class="btn btn-primary btn-block"
+                                    @click="navigateToWaypoint(1.3, -2.5, 1.5)">Living Room</button>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-primary btn-block"
+                                    @click="navigateToWaypoint(-2.0, -0.5, 0.0)">Sofa</button>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-primary btn-block"
+                                    @click="navigateToWaypoint(1.2, 1.8, -1.5)">Kitchen</button>
+                            </div>
                         </div>
                     </div>
                 </div>
