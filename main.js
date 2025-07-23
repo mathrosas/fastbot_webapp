@@ -41,9 +41,9 @@ var vueApp = new Vue({
     },
     computed: {
         yaw() {
-            const { x, y, z, w } = this.orientation;
+            const { x, y, z, w } = this.orientation
             // yaw = atan2( 2*(w*z + x*y), 1 - 2*(y*y + z*z) )
-            return Math.atan2(2*(w*z + x*y), 1 - 2*(y*y + z*z));
+            return Math.atan2(2*(w*z + x*y), 1 - 2*(y*y + z*z))
         }
     },
     // helper methods to connect to ROS
@@ -60,6 +60,7 @@ var vueApp = new Vue({
                 this.loading = false
                 this.setup3DViewer()
                 this.setupMapViewer()
+                this.setCamera()
                 this.pubInterval = setInterval(this.publish, 100)
 
                 // subscribe to odometry
@@ -97,6 +98,7 @@ var vueApp = new Vue({
                 clearInterval(this.pubInterval)
                 if (this.odomTopic) this.odomTopic.unsubscribe()
                 if (this.cmdVelTopic) this.cmdVelTopic.unsubscribe()
+                document.getElementById('divCamera').innerHTML = ''
             })
         },
         setup3DViewer() {
@@ -166,8 +168,8 @@ var vueApp = new Vue({
 
             // 3) once the grid arrives or updates, scale AND SHIFT to center
             this.mapClient.on('change', () => {
-                const grid = this.mapClient.currentGrid;
-                this.mapViewer.scaleToDimensions(grid.width, grid.height);
+                const grid = this.mapClient.currentGrid
+                this.mapViewer.scaleToDimensions(grid.width, grid.height)
                 // recenter the map so (0,0) is in the middle of the canvas
                 this.mapViewer.shift(
                 grid.pose.position.x,
@@ -240,6 +242,47 @@ var vueApp = new Vue({
         resetJoystickVals() {
             this.joystick.vertical = 0
             this.joystick.horizontal = 0
+        },
+        // setCamera: function() {
+        //     let without_wss = this.rosbridge_address.split('wss://')[1]
+        //     console.log(without_wss)
+        //     let domain = without_wss.split('/')[0] + '/' + without_wss.split('/')[1]
+        //     console.log(domain)
+        //     let host = domain + '/cameras'
+        //     let viewer = new MJPEGCANVAS.Viewer({
+        //         divID: 'divCamera',
+        //         host: host,
+        //         width: 320,
+        //         height: 240,
+        //         topic: '/fastbot_1/camera/image_raw',
+        //         ssl: true,
+        //     })
+        // },
+        setCamera: function() {
+            // 1) turn wss://…/rosbridge/ into an https:// prefix
+            const httpsPrefix = this.rosbridge_address
+            .replace(/^wss:\/\//, 'https://')
+            .split('/rosbridge')[0]
+
+            // 2) build the full stream URL
+            const streamUrl = `${httpsPrefix}`
+            + `/cameras/stream`
+            + `?topic=/fastbot_1/camera/image_raw`
+            + `&width=320&height=240`
+
+            // 3) grab the container and replace any old content
+            const camDiv = document.getElementById('divCamera')
+            camDiv.innerHTML = ''
+
+            // 4) create an <img> that will keep the MJPEG connection open
+            const img = document.createElement('img')
+            img.src    = streamUrl
+            img.width  = 320
+            img.height = 240
+            img.alt    = 'FastBot camera stream'
+
+            // 5) insert it
+            camDiv.appendChild(img)
         },
     },
     mounted() {
